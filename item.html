@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caption Swap Game - Extended Edition</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Arial', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            user-select: none;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .game-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .instructions {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #1976d2;
+            font-size: 16px;
+        }
+        
+        .instructions strong {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .game-info {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .cartoons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .cartoon-box {
+            border: 3px solid #ddd;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            background: white;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .cartoon-box.correct {
+            border-color: #4CAF50;
+            background-color: #e8f5e9;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .cartoon-box.drag-over {
+            border-color: #2196F3;
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
+        }
+        
+        .cartoon-image {
+            width: 100%;
+            height: 200px;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .cartoon-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .image-placeholder {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        
+        .image-placeholder h4 {
+            margin: 10px 0;
+            color: #444;
+            font-size: 18px;
+        }
+        
+        .caption-container {
+            min-height: 70px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: grab;
+            transition: all 0.3s ease;
+        }
+        
+        .caption-container:hover {
+            background-color: #e3f2fd;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .caption-container.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        
+        .caption-text {
+            font-size: 16px;
+            color: #333;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .correct-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease;
+        }
+        
+        .cartoon-box.correct .correct-indicator {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .controls {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .shuffle-btn {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        .shuffle-btn:hover {
+            background-color: #e68900;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .score {
+            text-align: center;
+            font-size: 24px;
+            margin-top: 20px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .win-message {
+            display: none;
+            text-align: center;
+            font-size: 28px;
+            color: #4CAF50;
+            margin-top: 20px;
+            animation: celebrate 1s ease-in-out;
+        }
+        
+        @keyframes celebrate {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .swap-count {
+            text-align: center;
+            font-size: 18px;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔄 Cartoon Caption Swap Game - Extended Edition 🔄</h1>
+    
+    <div class="game-container">
+        <div class="instructions">
+            <strong>How to Play:</strong>
+            All captions are in the wrong places! Drag any caption to another cartoon to swap them.
+            Keep swapping until every caption matches its cartoon. Think strategically - some swaps might temporarily make things worse!
+        </div>
+        
+        <div class="game-info">Playing with 6 random cartoons from a collection of 21 (with 42 caption variations)</div>
+        
+        <div class="cartoons-grid" id="cartoonsGrid"></div>
+        
+        <div class="score" id="scoreDisplay">Correct: 0 / 6</div>
+        <div class="swap-count" id="swapCount">Swaps: 0</div>
+        <div class="win-message" id="winMessage">🎉 Congratulations! All captions are correct! 🎉</div>
+        
+        <div class="controls">
+            <button class="shuffle-btn" onclick="shuffleGame()">New Game (Random 6)</button>
+        </div>
+    </div>
+    
+    <script>
+        // Complete game data for all 21 cartoons with two captions each
+        const allGameData = [
+            { 
+                id: 1, 
+                imageFile: "cartoon800.jpg", 
+                contestNumber: 800,
+                description: "Baseball Stadium Scene",
+                details: "Young player in dugout with coaches watching",
+                captions: [
+                    "He may need more time to develop.",
+                    "It's kinda weird in the showers."
+                ],
+                captionId: "800" 
+            },
+            { 
+                id: 2, 
+                imageFile: "cartoon802.jpg", 
+                contestNumber: 802,
+                description: "Construction Workers on Beam",
+                details: "Workers sitting on steel beam high above city, one delivering pizza",
+                captions: [
+                    "Separate checks? Really?",
+                    "I prefer the word 'gratuity'."
+                ],
+                captionId: "802" 
+            },
+            { 
+                id: 3, 
+                imageFile: "cartoon803.jpg", 
+                contestNumber: 803,
+                description: "Car Dealership Scene",
+                details: "Two men looking at a tiny toy-like car",
+                captions: [
+                    "It's like new. The previous owner preferred the box it came in.",
+                    "Your decision. I'm not going to push you."
+                ],
+                captionId: "803" 
+            },
+            { 
+                id: 4, 
+                imageFile: "cartoon805.jpg", 
+                contestNumber: 805,
+                description: "Living Room Scene",
+                details: "Giant creature filling the room with two people on couch",
+                captions: [
+                    "He said he had to drag you here kicking and screaming.",
+                    "I think we've had a major breakthrough today."
+                ],
+                captionId: "805" 
+            },
+            { 
+                id: 5, 
+                imageFile: "cartoon806.jpg", 
+                contestNumber: 806,
+                description: "Beach/Lifeguard Scene",
+                details: "Knight in armor as lifeguard with modern beachgoer",
+                captions: [
+                    "Could you rub some WD-40 on my back?",
+                    "Thanks, I like your suit too."
+                ],
+                captionId: "806" 
+            },
+            { 
+                id: 6, 
+                imageFile: "cartoon807.jpg", 
+                contestNumber: 807,
+                description: "Corn Maze Scene",
+                details: "Scientists/researchers looking at elaborate corn maze",
+                captions: [
+                    "Our research is backed by a hedge fund.",
+                    "Yes I did do my undergrad at Iowa, how'd you know?"
+                ],
+                captionId: "807" 
+            },
+            { 
+                id: 7, 
+                imageFile: "cartoon810.jpg", 
+                contestNumber: 810,
+                description: "Elephant in Elevator",
+                details: "Large elephant cramped in elevator with person",
+                captions: [
+                    "Got a shovel?",
+                    "Probably down."
+                ],
+                captionId: "810" 
+            },
+            { 
+                id: 8, 
+                imageFile: "cartoon823.jpg", 
+                contestNumber: 823,
+                description: "Airplane Magician Scene",
+                details: "Magician performing in airplane aisle",
+                captions: [
+                    "Be grateful you're not in business class. They have a mime.",
+                    "Beef, chicken or rabbit?"
+                ],
+                captionId: "823" 
+            },
+            { 
+                id: 9, 
+                imageFile: "cartoon827.jpg", 
+                contestNumber: 827,
+                description: "Caveman on Subway",
+                details: "Caveman sitting on subway train",
+                captions: [
+                    "I'm from the future. Vote carefully.",
+                    "I still say rock beats paper."
+                ],
+                captionId: "827" 
+            },
+            { 
+                id: 10, 
+                imageFile: "cartoon836.jpg", 
+                contestNumber: 836,
+                description: "Alien and Cow Scene",
+                details: "Alien with UFO interacting with cow in field",
+                captions: [
+                    "My wife insisted that I stop and ask for directions.",
+                    "We're humanitarians. We only eat humans"
+                ],
+                captionId: "836" 
+            },
+            { 
+                id: 11, 
+                imageFile: "cartoon841.jpg", 
+                contestNumber: 841,
+                description: "Scientists Viewing Mouse Maze",
+                details: "Scientists observing mice maze with paintings on walls",
+                captions: [
+                    "I was trying to boost their intelligence, but I merely made them pretentious.",
+                    "Unsurprisingly, they know it when they see it."
+                ],
+                captionId: "841" 
+            },
+            { 
+                id: 12, 
+                imageFile: "cartoon842.jpg", 
+                contestNumber: 842,
+                description: "Duck Flight Attendant",
+                details: "Duck serving as flight attendant on airplane",
+                captions: [
+                    "Kindly move to the rear and form a 'V'",
+                    "Join us next spring for the return flight."
+                ],
+                captionId: "842" 
+            },
+            { 
+                id: 13, 
+                imageFile: "cartoon857.jpg", 
+                contestNumber: 857,
+                description: "Airplane Ant Scene",
+                details: "Giant ant passenger on airplane",
+                captions: [
+                    "That's nice. My husband is a carpenter too.",
+                    "This is no picnic for me either."
+                ],
+                captionId: "857" 
+            },
+            { 
+                id: 14, 
+                imageFile: "cartoon867.jpg", 
+                contestNumber: 867,
+                description: "Two Trees Talking",
+                details: "Two trees with faces having a conversation",
+                captions: [
+                    "I heard I'm being considered for a cabinet post.",
+                    "You're not going like THAT, are you?"
+                ],
+                captionId: "867" 
+            },
+            { 
+                id: 15, 
+                imageFile: "cartoon868.jpg", 
+                contestNumber: 868,
+                description: "Ice Cream Cone in Therapy",
+                details: "Mr. Softee ice cream cone on therapist's couch",
+                captions: [
+                    "Lately, my meltdowns are coming more frequently.",
+                    "We had another fight about the thermostat."
+                ],
+                captionId: "868" 
+            },
+            { 
+                id: 16, 
+                imageFile: "cartoon874.jpg", 
+                contestNumber: 874,
+                description: "Alien with Rake in Park",
+                details: "Alien with rake talking to man walking dog",
+                captions: [
+                    "We compost in peace.",
+                    "We need them to line your cages."
+                ],
+                captionId: "874" 
+            },
+            { 
+                id: 17, 
+                imageFile: "cartoon880.jpg", 
+                contestNumber: 880,
+                description: "Therapy Office with Clock",
+                details: "Patient and therapist with huge clock on wall",
+                captions: [
+                    "Ticking? Actually I find your breathing more annoying.",
+                    "I guess I really should get glasses."
+                ],
+                captionId: "880" 
+            },
+            { 
+                id: 18, 
+                imageFile: "cartoon883.jpg", 
+                contestNumber: 883,
+                description: "Cats Watching TV",
+                details: "Two cats watching television with tiger on screen",
+                captions: [
+                    "Do you ever get the feeling you're wasting one of your lives?",
+                    "Think her nails are real?"
+                ],
+                captionId: "883" 
+            },
+            { 
+                id: 19, 
+                imageFile: "cartoon884.jpg", 
+                contestNumber: 884,
+                description: "Mr. Peanut and Elephant",
+                details: "Mr. Peanut character meeting elephant",
+                captions: [
+                    "What do you mean, 'we can do this the smooth way or the crunchy way'...?!",
+                    "On my dating profile, I said elegant."
+                ],
+                captionId: "884" 
+            },
+            { 
+                id: 20, 
+                imageFile: "cartoon885.jpg", 
+                contestNumber: 885,
+                description: "Two Snowmen Boxing",
+                details: "Two snowmen in a boxing ring",
+                captions: [
+                    "Upset? I'm beside myself!",
+                    "Oh my God! My butt is huge."
+                ],
+                captionId: "885" 
+            },
+            { 
+                id: 21, 
+                imageFile: "cartoon895.jpg", 
+                contestNumber: 895,
+                description: "Aliens at Mall Directory",
+                details: "Aliens looking at mall directory/map",
+                captions: [
+                    "You said this was uncharted territory.",
+                    "To Bed, Bath, and Beyond!"
+                ],
+                captionId: "895" 
+            }
+        ];
+        
+        let gameData = [];
+        let currentPlacements = {};
+        let swapCount = 0;
+        let draggedFrom = null;
+        
+        // Initialize the game with random 6 cartoons
+        function initGame() {
+            swapCount = 0;
+            updateSwapCount();
+            
+            // Select 6 random cartoons
+            const shuffled = [...allGameData].sort(() => Math.random() - 0.5);
+            gameData = shuffled.slice(0, 6).map(item => {
+                // Randomly select which caption to use for this cartoon
+                const selectedCaption = item.captions[Math.floor(Math.random() * 2)];
+                return {
+                    ...item,
+                    correctCaption: selectedCaption,
+                    // Create unique caption ID that includes which variant was chosen
+                    uniqueCaptionId: `${item.captionId}-${item.captions.indexOf(selectedCaption)}`
+                };
+            });
+            
+            // Create captions array and shuffle them
+            const captions = gameData.map(item => ({
+                caption: item.correctCaption,
+                captionId: item.captionId,
+                uniqueCaptionId: item.uniqueCaptionId
+            }));
+            
+            // Shuffle captions ensuring none are in correct position
+            let shuffledCaptions;
+            do {
+                shuffledCaptions = [...captions].sort(() => Math.random() - 0.5);
+            } while (shuffledCaptions.some((cap, idx) => cap.captionId === gameData[idx].captionId));
+            
+            // Assign shuffled captions
+            gameData.forEach((item, index) => {
+                currentPlacements[item.id] = {
+                    caption: shuffledCaptions[index].caption,
+                    captionId: shuffledCaptions[index].captionId,
+                    uniqueCaptionId: shuffledCaptions[index].uniqueCaptionId
+                };
+            });
+            
+            renderGame();
+        }
+        
+        function renderGame() {
+            const cartoonsGrid = document.getElementById('cartoonsGrid');
+            cartoonsGrid.innerHTML = '';
+            
+            gameData.forEach((item) => {
+                const cartoonBox = document.createElement('div');
+                cartoonBox.className = 'cartoon-box';
+                cartoonBox.dataset.cartoonId = item.id;
+                
+                // Check if caption is correct
+                if (currentPlacements[item.id].captionId === item.captionId) {
+                    cartoonBox.classList.add('correct');
+                }
+                
+                // Correct indicator
+                const indicator = document.createElement('div');
+                indicator.className = 'correct-indicator';
+                indicator.innerHTML = '✓';
+                
+                // Image container
+                const imageDiv = document.createElement('div');
+                imageDiv.className = 'cartoon-image';
+                
+                const img = document.createElement('img');
+                img.src = item.imageFile;
+                img.alt = item.description;
+                img.onerror = function() {
+                    imageDiv.innerHTML = `
+                        <div class="image-placeholder">
+                            <h4>#${item.contestNumber}</h4>
+                            <p><strong>${item.description}</strong></p>
+                            <p style="font-size: 12px; color: #777;">${item.details}</p>
+                        </div>
+                    `;
+                };
+                imageDiv.appendChild(img);
+                
+                // Caption container
+                const captionContainer = document.createElement('div');
+                captionContainer.className = 'caption-container';
+                captionContainer.draggable = true;
+                captionContainer.dataset.cartoonId = item.id;
+                
+                const captionText = document.createElement('div');
+                captionText.className = 'caption-text';
+                captionText.textContent = currentPlacements[item.id].caption;
+                
+                captionContainer.appendChild(captionText);
+                
+                // Add drag event listeners
+                captionContainer.addEventListener('dragstart', handleDragStart);
+                captionContainer.addEventListener('dragend', handleDragEnd);
+                cartoonBox.addEventListener('dragover', handleDragOver);
+                cartoonBox.addEventListener('drop', handleDrop);
+                cartoonBox.addEventListener('dragleave', handleDragLeave);
+                
+                cartoonBox.appendChild(indicator);
+                cartoonBox.appendChild(imageDiv);
+                cartoonBox.appendChild(captionContainer);
+                cartoonsGrid.appendChild(cartoonBox);
+            });
+            
+            updateScore();
+        }
+        
+        // Drag and drop handlers
+        function handleDragStart(e) {
+            const container = e.target.closest('.caption-container');
+            container.classList.add('dragging');
+            draggedFrom = container.dataset.cartoonId;
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        
+        function handleDragEnd(e) {
+            const container = e.target.closest('.caption-container');
+            container.classList.remove('dragging');
+            draggedFrom = null;
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            const cartoonBox = e.target.closest('.cartoon-box');
+            if (cartoonBox && cartoonBox.dataset.cartoonId !== draggedFrom) {
+                cartoonBox.classList.add('drag-over');
+            }
+        }
+        
+        function handleDragLeave(e) {
+            const cartoonBox = e.target.closest('.cartoon-box');
+            if (cartoonBox) {
+                cartoonBox.classList.remove('drag-over');
+            }
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            const cartoonBox = e.target.closest('.cartoon-box');
+            if (!cartoonBox) return;
+            
+            cartoonBox.classList.remove('drag-over');
+            
+            const draggedTo = cartoonBox.dataset.cartoonId;
+            
+            // Don't swap with self
+            if (draggedFrom === draggedTo) return;
+            
+            // Perform the swap
+            const temp = currentPlacements[draggedFrom];
+            currentPlacements[draggedFrom] = currentPlacements[draggedTo];
+            currentPlacements[draggedTo] = temp;
+            
+            swapCount++;
+            updateSwapCount();
+            
+            // Re-render the game
+            renderGame();
+            
+            // Check for win
+            if (checkWin()) {
+                document.getElementById('winMessage').style.display = 'block';
+            }
+        }
+        
+        function updateScore() {
+            let correct = 0;
+            gameData.forEach(item => {
+                if (currentPlacements[item.id].captionId === item.captionId) {
+                    correct++;
+                }
+            });
+            document.getElementById('scoreDisplay').textContent = `Correct: ${correct} / 6`;
+        }
+        
+        function updateSwapCount() {
+            document.getElementById('swapCount').textContent = `Swaps: ${swapCount}`;
+        }
+        
+        function checkWin() {
+            return gameData.every(item => 
+                currentPlacements[item.id].captionId === item.captionId
+            );
+        }
+        
+        function shuffleGame() {
+            document.getElementById('winMessage').style.display = 'none';
+            initGame();
+        }
+        
+        // Initialize game on load
+        window.onload = initGame;
+    </script>
+</body>
+</html>
